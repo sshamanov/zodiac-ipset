@@ -40,3 +40,42 @@ app.get("/list", (request, response) => {
 
     });
  });
+
+ app.post('/add', (req, res) => {
+    const { list, ips } = req.body;
+    
+    console.log(JSON.stringify(req.body));
+
+    if (!list || !Array.isArray(ips)) {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+  
+    let results = [];
+    let errors = [];
+    let completed = 0;
+  
+    ips.forEach(ip => {
+      const command = `sudo ipset del HW ${ip}; sudo ipset del BP ${ip}; sudo ipset add ${list} ${ip}`;
+  
+      exec(command, (error, stdout, stderr) => {
+        if (error || stderr) {
+          errors.push({ ips: ip, error: error ? error.message : stderr });
+        } else {
+          try {
+            results.push({ ips: ip, result: JSON.parse(stdout) });
+          } catch (parseError) {
+            errors.push({ ips: ip, error: 'Error parsing JSON' });
+          }
+        }
+  
+        completed++;
+        if (completed === ips.length) {
+          if (errors.length > 0) {
+            res.status(500).json({ errors, results });
+          } else {
+            res.json(results);
+          }
+        }
+      });
+    });
+  });
