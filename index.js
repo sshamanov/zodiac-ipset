@@ -55,7 +55,8 @@ app.get("/list", (request, response) => {
     let completed = 0;
   
     ips.forEach(ip => {
-      const command = `sudo ipset del HW ${ip}; sudo ipset del BP ${ip}; sudo ipset add ${list} ${ip}`;
+      
+      const command = `for i in $(sudo ipset list | grep -Po 'Name: \K.*');do echo ipset del $i ${ip};done; sudo ipset add ${list} ${ip}`;
   
       exec(command, (error, stdout, stderr) => {
         if (error || stderr) {
